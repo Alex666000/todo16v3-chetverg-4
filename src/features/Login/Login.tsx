@@ -7,52 +7,56 @@ import FormGroup from "@mui/material/FormGroup";
 import FormLabel from "@mui/material/FormLabel";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
-import {useFormik} from "formik";
-import {useDispatch, useSelector} from "react-redux";
-import {loginTC} from "./auth-reducer";
-import {Navigate} from "react-router-dom";
 import {useAppDispatch, useAppSelector} from "../../app/store";
+import {useFormik} from "formik";
+import {loginTC} from "./auth-reducer";
+import {setAppStatusAC} from "../../app/app-reducer";
+import {Navigate} from "react-router-dom";
 
 export const Login = () => {
     const dispatch = useAppDispatch()
     const isLoggedIn = useAppSelector(state => state.auth.isLoggedIn)
 
     type FormikErrorType = {
-        email?: string
-        password?: string
-        rememberMe?: boolean
+        email?: string,
+        password?: string,
+        rememberMe?: boolean,
     }
 
     const formik = useFormik({
         initialValues: {
             email: "",
             password: "",
-            rememberMe: false
+            rememberMe: false,
         },
         validate: (values) => {
             console.log(values)
-
-            const errors: FormikErrorType = {}
+            const errors: FormikErrorType = {};
             if (!values.email) {
-                errors.email = "Bad email"
+                errors.email = "Required";
+            } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(values.email)) {
+                errors.email = "Invalid email address";
             }
-            if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(values.email)) {
-                errors.email = "Invalid email address"
+            if (!values.password) {
+                errors.password = "Пустое поле";
+            } else if (values.password.length < 4) {
+                errors.password = "Пароль должен быть юольше 4 символов";
             }
-            if (values.password.length < 3) {
-                errors.password = "Must be 3 characters or less";
-            }
-            return errors
+
+            return errors;
         },
+
         onSubmit: values => {
-            // alert(JSON.stringify(values));
             dispatch(loginTC(values))
+            formik.resetForm()
         },
-    })
+
+    });
 
     if (isLoggedIn) {
         <Navigate to={"/"}/>
     }
+    console.log(isLoggedIn)
 
     return <Grid container justifyContent={"center"}>
         <Grid item justifyContent={"center"}>
@@ -70,23 +74,34 @@ export const Login = () => {
                     </FormLabel>
                     <FormGroup>
                         <TextField label="Email" margin="normal"
-                                   name={"email"}
-                                   onChange={formik.handleChange}
-                                   value={formik.values.email}
+                            // name="email"
+                            // onChange={formik.handleChange}
+                            // onBlur={formik.handleBlur}
+                            // value={formik.values.email}
+                                   {...formik.getFieldProps("email")}
                         />
-                        {formik.errors.email ? <div style={{color: "red"}}>{formik.errors.email}</div> : null}
-                        <TextField type="password" label="Password"
+                        {formik.touched.email && formik.errors.email &&
+                            <div style={{color: "red"}}>{formik.errors.email}</div>}
+                        <TextField label="Password"
                                    margin="normal"
-                                   name={"password"}
-                                   onChange={formik.handleChange}
-                                   value={formik.values.password}
+                            // name="password"
+                            // onChange={formik.handleChange}
+                            // onBlur={formik.handleBlur}
+                            // value={formik.values.password}
+                                   {...formik.getFieldProps("password")}
                         />
-                        {formik.errors.password ? <div style={{color: "red"}}>{formik.errors.password}</div> : null}
+                        {formik.touched.password && formik.errors.password &&
+                            <div style={{color: "red"}}>{formik.errors.password}</div>}
+
 
                         <FormControlLabel label={"Remember me"} control={<Checkbox
-                            name={"rememberMe"}
-                            onChange={formik.handleChange}
+                            // name={"rememberMe"}
+                            // onChange={formik.handleChange}
+                            // value={formik.values.rememberMe}
+
+                            // чтобы у checked очистилось reset надо написать checked
                             checked={formik.values.rememberMe}
+                            {...formik.getFieldProps("rememberMe")}
                         />}/>
                         <Button type={"submit"} variant={"contained"} color={"primary"}>
                             Login
@@ -100,7 +115,14 @@ export const Login = () => {
 }
 
 /*
+- formik.touched.email чтобы ошибка не показывалась всегда а только после нажатия кнопки
+- а нам надо когда теряем фокус после того как ввели что-то — тогда происходит отображение ошибок
+для этого: onBlur
+- далее  {...formik.getFieldProps('password')}
+- Сбросить, зачищать поля: formik.resetForm()
 - собрали данные в форму - потом диспатчим эти данные -- диспатчим санку -- санка получает эти данные в бизнесе и отправляет их на сервер
+- post запрос создает кука ----- delete убивает куку
+- auth/me нужен после перезагрузке страницы,
 - плясать надо от АПИ-шке - смотреть какие данные она ждет (какие поля при логинизации - см. докум-ию, что там написано на ендпоинте login)
 - логинизация = post запрос всегда --- каптча проверяет робот мы или нет... Не всегда требуется
 - для каждого сайта свои куки - они строго для домена - браузер для домена у себя сохраняет куку - она летит с каждым запросом на сервер
@@ -131,6 +153,18 @@ export const Login = () => {
 /auth/me - отправляем get запрос сюда --- и если кука существует она цеплячется и /auth/me возвращает ответ кто я такой
 если сделаю get запрос сюда же не имея куки - то ошибка "Вы не автаризованы". Значит на старте приложения делаем запрос сюда
 и спрашиваем залогинен я или нет?
+
+Если я не залогинен то, в ответ я получу сообщение о том, что я не авторизован
+
+1) Теперь после перезагрузки страницы нам нужно понимать залогинены мы или нет.
+
+После того как вы залогинитесь и увидите страницу тудулистов попробуйте перегрузить страницу и… вы увидите что вас редиректнет на страницу логина. При этом если вы посмотрите network,то увидите что кука есть. Почему так происходит? Потому что система не понимает кто мы и ориентруется на значение isLoggidIn в редьюсере, которое со старта у нас равно false.
+
+То есть по сути, перед тем, как вообще стартовать наше приложение, нам хотелось бы определить, а кто мы: анонимный юзер или залогиненный… То есть нам условно перед стартом, нужно проинициализироваться, получив какую-то инфу о себе, чтобы дальше можно было функционировать, понимая, что можно, а что нельзя показывать.
+Под инициализацией приложения стоит понимать, что нам нужно проверить не просто что у нас есть кука, а что у нас правильная кука.
+Чтобы это проверить нам нужно при старте нашего приложения сделать me запрос, который и даст нам ответ
+Если я залогинен и кука правильная в ответ я получу свои личные данные
+
 - со старта у нас isLoggedIn: false - что не залогинены - попадаем на стр. Логина - но потом в фоне делаем запрос и сервер говорит
 что мы залогинены и нас редирекнет на главную стр. - и получаются тупые дерганья: хочу свои туду посмотреть а меня на логин редерекнет потом
 а потом обратно на туду редирекнет, не круто! Сначала надо показать крутилку - сервер не знает залогенен я или нет

@@ -37,26 +37,32 @@ export const todolistsAPI = {
 }
 
 export const authAPI = {
-    // смотри документацию
+    // объект data
+    // При типизации запроса первым параметром указываем Реквест тип наш - что вызываем с БЛЛ с документации реквест...
+    // или коротко: запрашиваемый тип и возвращаемый
+    // если перейти внутрь метода post видим что он принимает 3 параметра
+    // Если аксиос пакет свежии самый то минимальные требония к типизации просто ResponseType уточненного достаточно пакет свежии самый то
+    // минимальные требония к типизации просто ResponseType уточненного достаточно
+    // data { userId: number }
     login(data: LoginParamsType) {
-        return instance.post<AxiosResponse<ResponseType<{ userId?: number }>>>("auth/login", data);
+        return instance.post<LoginParamsType, AxiosResponse<ResponseType<{ userId: number }>>>("auth/login", data);
     },
     logout() {
-        return instance.delete<AxiosResponse<ResponseType<{ userId?: number }>>>("auth/login");
-    },
-    me() {
-        return instance.get<AxiosResponse<ResponseType<{ id: number, email: string, login: string }>>>("auth/me");
+        return instance.delete<ResponseType>(`auth/login`);
 
+    },
+    // кто я? Инициализация Арр
+    me() {
+        return instance.get<ResponseType<{ id: number, email: string, login: string }>>(`auth/me`);
     }
 }
-
 
 // types
 export type LoginParamsType = {
     email: string
     password: string
     rememberMe: boolean
-    captcha?: string
+    captcha?: boolean
 }
 
 export type TodolistType = {
@@ -113,3 +119,5 @@ type GetTasksResponse = {
     totalCount: number
     items: TaskType[]
 }
+// делаем всегда сначало АПИ - потом добавляем в комбайн редюсер - создаем редюсер в папке своей фичи
+// описываем его весь - потом логику санки - потом UI

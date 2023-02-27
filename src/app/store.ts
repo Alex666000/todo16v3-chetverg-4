@@ -4,7 +4,8 @@ import {AnyAction, applyMiddleware, combineReducers, legacy_createStore} from "r
 import {TypedUseSelectorHook, useDispatch, useSelector} from "react-redux";
 import thunkMiddleware, {ThunkDispatch} from "redux-thunk"
 import {appReducer} from "./app-reducer"
-import {authReducer, setIsLoggedInAC} from "../features/Login/auth-reducer";
+import {authAPI} from "../api/todolists-api";
+import {authReducer} from "../features/Login/auth-reducer";
 
 
 // объединяя reducer-ы с помощью combineReducers,
